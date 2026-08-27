@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHIFLADERO</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#d9d9d9;--fg:#111;--muted:#888;--border:#bbb;
+  --win:#f5f5f5;--shadow:0 2px 10px rgba(0,0,0,0.14);--hover:rgba(0,0,0,0.05);
+  --c-family:#1501fe;--c-sub:#fe0110;
+}
+:root.dark{
+  --bg:#1a1a1a;--fg:#e8e8e8;--muted:#666;--border:#333;
+  --win:#242424;--shadow:0 2px 10px rgba(0,0,0,0.5);--hover:rgba(255,255,255,0.05);
+  --c-family:#4fc1e9;--c-sub:#fe0110;
+}
+body{font-family:'Courier New',Courier,monospace;background:var(--bg);color:var(--fg);
+  font-size:13px;line-height:1.5;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* TOPBAR */
+.topbar{background:var(--bg);padding:8px 14px 0;flex-shrink:0;}
+.topbar-row{display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;}
+.topbar h1{font-size:12px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;}
+#theme-toggle{background:none;border:1px solid var(--border);padding:3px 9px;font-family:inherit;
+  font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-radius:2px;}
+#theme-toggle:hover{border-color:var(--fg);color:var(--fg);}
+.app-tabs{display:flex;align-items:flex-end;gap:4px;flex-wrap:wrap;}
+.app-tab{padding:5px 16px;font-family:inherit;font-size:11px;font-weight:700;
+  letter-spacing:0.1em;text-transform:uppercase;border:1px solid var(--border);
+  border-bottom:none;background:rgba(0,0,0,0.06);color:var(--muted);cursor:pointer;
+  border-radius:3px 3px 0 0;transition:all 0.1s;}
+.app-tab.active{background:var(--win);color:var(--fg);}
+
+/* VIEWS */
+.view{display:none;flex:1;overflow:hidden;padding:10px;flex-direction:column;gap:10px;}
+.view.active{display:flex;}
+
+.window{border:1px solid var(--border);box-shadow:var(--shadow);border-radius:0 3px 3px 3px;
+  display:flex;flex-direction:column;overflow:hidden;background:var(--win);flex:1;}
+.win-tb{padding:6px 12px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;
+  letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);flex-shrink:0;
+  display:flex;align-items:center;gap:8px;}
+
+/* TOOLBAR */
+.scheme-tb{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:7px 12px;
+  border-bottom:1px solid var(--border);flex-shrink:0;}
+input[type=search],input[type=text]{background:none;border:none;border-bottom:1px solid var(--border);
+  font-family:inherit;font-size:12px;padding:3px 0;color:var(--fg);outline:none;}
+input[type=search]{width:180px;}
+input::placeholder{color:var(--muted);}
+input:focus{border-bottom-color:var(--fg);}
+button.mini{background:none;border:1px solid var(--border);padding:2px 9px;
+  font-family:inherit;font-size:10px;cursor:pointer;color:var(--muted);text-transform:uppercase;
+  letter-spacing:0.05em;border-radius:2px;}
+button.mini:hover{border-color:var(--fg);color:var(--fg);}
+.tb-spacer{margin-left:auto;}
+
+/* CONTENT */
+.win-content{overflow-y:auto;flex:1;padding:10px 14px;}
+.family{border-bottom:1px solid var(--border);}
+.family:last-child{border-bottom:none;}
+.fhdr{display:flex;align-items:baseline;gap:10px;padding:10px 0;cursor:pointer;
+  user-select:none;background:none;border:none;width:100%;text-align:left;font-family:inherit;}
+.fhdr:hover .fname{opacity:0.65;}
+.ticon{font-size:10px;color:var(--muted);width:10px;flex-shrink:0;}
+.fname{font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-family);}
+.fcount{margin-left:auto;font-size:11px;color:var(--muted);flex-shrink:0;}
+.fadd{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0 4px;font-family:inherit;}
+.fadd:hover{color:var(--fg);}
+.fbody{display:none;padding-bottom:12px;}
+.fbody.open{display:block;}
+
+.sfhdr{display:flex;align-items:center;gap:8px;margin:10px 0 4px 18px;}
+.sfname{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-sub);}
+.sfadd{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:0 3px;font-family:inherit;}
+.sfadd:hover{color:var(--fg);}
+
+.items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));padding-left:18px;gap:2px 6px;}
+.ritem-wrap{display:flex;align-items:center;gap:4px;padding:4px 4px 4px 0;border-radius:2px;
+  transition:background 0.1s;position:relative;}
+.ritem-wrap:hover{background:var(--hover);}
+.item-link{font-size:12px;flex:1;cursor:pointer;user-select:none;text-decoration:none;color:inherit;}
+.item-link:hover{color:var(--c-family);}
+.item-del{width:14px;height:14px;flex-shrink:0;background:none;border:none;cursor:pointer;
+  font-size:13px;line-height:1;color:var(--muted);padding:0;font-family:inherit;opacity:0;transition:opacity 0.1s;}
+.ritem-wrap:hover .item-del{opacity:1;}
+.item-del:hover{color:#b00;}
+.item-hidden{display:none;}
+.empty-msg{padding:20px 0;font-size:11px;color:var(--muted);display:none;}
+
+.new-fam-btn{margin-top:6px;background:none;border:1px dashed var(--border);padding:6px 12px;
+  font-family:inherit;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);
+  cursor:pointer;border-radius:2px;width:100%;text-align:left;}
+.new-fam-btn:hover{border-color:var(--fg);color:var(--fg);}
+
+/* ALEATORIO */
+#view-aleatorio .window{align-items:center;justify-content:center;}
+#aleatorio-lens .lens-tb{border-bottom:none;justify-content:center;padding:0;margin-bottom:6px;}
+.roll-box{display:flex;flex-direction:column;align-items:center;gap:20px;padding:30px;text-align:center;}
+.roll-result{font-size:20px;font-weight:700;letter-spacing:0.04em;min-height:60px;
+  display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;}
+.roll-line{display:flex;gap:8px;align-items:baseline;}
+.roll-tag{font-size:9px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;width:90px;text-align:right;}
+.roll-val{color:var(--c-family);}
+.roll-opts{display:flex;gap:16px;font-size:11px;color:var(--muted);}
+.roll-opts label{display:flex;align-items:center;gap:5px;cursor:pointer;}
+#roll-btn{background:var(--fg);color:var(--win);border:none;padding:10px 26px;font-family:inherit;
+  font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border-radius:2px;}
+#roll-btn:hover{opacity:0.85;}
+#roll-search{background:none;border:1px solid var(--border);padding:6px 16px;font-family:inherit;
+  font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg);cursor:pointer;border-radius:2px;}
+#roll-search:hover{border-color:var(--fg);}
+
+/* SUBVIEWS (dentro de Esquema general) */
+.subview{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.subview.active{display:flex;}
+#esquema-subviews{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+
+/* DROPDOWN (selector de categoría del esquema) */
+.fdd-btn{background:none;border:1px solid var(--border);padding:5px 12px;font-family:inherit;
+  font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg);
+  cursor:pointer;border-radius:2px;display:inline-flex;align-items:center;gap:8px;}
+.fdd-btn:hover{border-color:var(--fg);}
+.fdd-arrow{font-size:9px;line-height:1;color:var(--muted);}
+.fdd-menu{position:fixed;z-index:700;background:var(--win);border:1px solid var(--border);
+  box-shadow:var(--shadow);border-radius:3px;min-width:200px;display:none;padding:5px 0;overflow:hidden;}
+.fdd-menu.open{display:block;}
+.fdd-item{padding:7px 14px;font-size:12px;cursor:pointer;user-select:none;}
+.fdd-item:hover{background:var(--hover);}
+.fdd-item.active{color:var(--c-family);font-weight:700;}
+
+/* CUADERNO */
+#view-cuaderno .window{flex-direction:column;}
+.cuad-body{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.cuad-panes{display:flex;flex:1;overflow:hidden;}
+.cuad-topics{width:190px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;padding:10px;}
+.cuad-topic-item{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:2px;
+  cursor:pointer;font-size:12px;margin-bottom:2px;}
+.cuad-topic-item:hover{background:var(--hover);}
+.cuad-topic-item.active{background:rgba(0,0,0,0.08);font-weight:700;color:var(--c-family);}
+.cuad-topic-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cuad-topic-del{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;
+  padding:0 2px;font-family:inherit;opacity:0;transition:opacity .1s;}
+.cuad-topic-item:hover .cuad-topic-del{opacity:1;}
+.cuad-topic-del:hover{color:#b00;}
+.cuad-add-topic{margin-top:8px;background:none;border:1px dashed var(--border);width:100%;padding:7px;
+  font-family:inherit;font-size:10px;color:var(--muted);cursor:pointer;border-radius:2px;
+  text-transform:uppercase;letter-spacing:0.06em;}
+.cuad-add-topic:hover{border-color:var(--fg);color:var(--fg);}
+.cuad-detail{flex:1;overflow-y:auto;padding:16px 20px;}
+.cuad-root-title{font-size:15px;font-weight:700;letter-spacing:0.04em;margin-bottom:4px;
+  color:var(--c-family);cursor:pointer;display:inline-block;}
+.cuad-root-title:hover{opacity:0.7;}
+.cuad-node{margin:1px 0;}
+.cuad-node-row{display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:2px;}
+.cuad-node-row:hover{background:var(--hover);}
+.cuad-node-text{font-size:12px;cursor:pointer;flex:1;}
+.cuad-node-text:hover{color:var(--c-family);}
+.cuad-node-add,.cuad-node-del{background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:13px;padding:0 3px;font-family:inherit;opacity:0;transition:opacity .1s;flex-shrink:0;}
+.cuad-node-row:hover .cuad-node-add,.cuad-node-row:hover .cuad-node-del{opacity:1;}
+.cuad-node-add:hover{color:var(--fg);}
+.cuad-node-del:hover{color:#b00;}
+.cuad-node-tog{font-size:10px;color:var(--muted);width:11px;flex-shrink:0;cursor:pointer;user-select:none;text-align:center;}
+.cuad-children{display:none;margin-left:18px;border-left:1px solid var(--border);padding-left:10px;}
+.cuad-children.open{display:block;}
+.cuad-empty{padding:40px;text-align:center;color:var(--muted);font-size:11px;}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--fg);color:var(--win);padding:9px 18px;border-radius:3px;font-size:12px;
+  opacity:0;pointer-events:none;transition:all 0.25s;z-index:1000;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <h1>Chifladero</h1>
+    <div style="display:flex;gap:8px;">
+      <button id="btn-export" class="mini">↓ exportar</button>
+      <label id="btn-import-label" class="mini" style="cursor:pointer;">↑ importar<input type="file" id="btn-import" accept=".json" style="display:none;"></label>
+      <button id="theme-toggle">Modo oscuro</button>
+    </div>
+  </div>
+  <div class="app-tabs">
+    <button class="app-tab active" data-tab="esquema">Esquema general</button>
+    <button class="app-tab" data-tab="aleatorio">Aleatorio</button>
+    <button class="app-tab" data-tab="cuaderno">Cuaderno</button>
+  </div>
+</div>
+
+<div class="view active" id="view-esquema">
+  <div class="scheme-tb" style="border-bottom:none;">
+    <button class="fdd-btn" id="esquema-dd-btn">Personajes <span class="fdd-arrow">▾</span></button>
+  </div>
+  <div class="fdd-menu" id="esquema-dd-menu"></div>
+  <div id="esquema-subviews">
+    <div class="subview active" id="view-personajes" data-cat="personajes"></div>
+    <div class="subview" id="view-acciones" data-cat="acciones"></div>
+    <div class="subview" id="view-entornos" data-cat="entornos"></div>
+    <div class="subview" id="view-epocas" data-cat="epocas"></div>
+    <div class="subview" id="view-arquetipos" data-cat="arquetipos"></div>
+    <div class="subview" id="view-subculturas" data-cat="subculturas"></div>
+  </div>
+</div>
+
+<div class="view" id="view-aleatorio">
+  <div class="window">
+    <div class="roll-box">
+      <div id="aleatorio-lens"></div>
+      <div class="roll-result" id="roll-result">
+        <span style="color:var(--muted);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">pulsa sortear</span>
+      </div>
+      <div class="roll-opts">
+        <label><input type="checkbox" id="roll-epoca"> incluir época</label>
+      </div>
+      <button id="roll-btn">Sortear</button>
+      <button id="roll-search" style="display:none;">Buscar en Google Imágenes</button>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-cuaderno"></div>
+
+<script>
+const THEME_KEY='ref_theme';
+const DATA_KEY='ref_data_v1';
+
+function applyTheme(dark){
+  document.documentElement.classList.toggle('dark',dark);
+  document.getElementById('theme-toggle').textContent = dark?'Modo claro':'Modo oscuro';
+  localStorage.setItem(THEME_KEY, dark?'dark':'light');
+}
+document.getElementById('theme-toggle').addEventListener('click',()=>{
+  applyTheme(!document.documentElement.classList.contains('dark'));
+});
+
+// ── DATA SEED ──
+// personajes / acciones / epocas / arquetipos: [{name, items:[...]}]
+// entornos: [{name, sub:[{name, items:[...]}]}]
+const SEED = {
+  personajes: [
+    {name:'Historia real', items:['Soldado romano','Legionario','Centurión','Gladiador','Samurái','Ninja','Ashigaru',
+      'Vikingo','Berserker','Faraón','Sacerdote egipcio','Embalsamador','Caballero templario','Caballero medieval',
+      'Escudero','Monje guerrero','Cruzado','Guerrero mongol','Guerrero azteca','Guerrero maya','Guerrero inca',
+      'Chamán tribal','Soldado napoleónico','Soldado de la Primera Guerra Mundial','Soldado de la Segunda Guerra Mundial',
+      'Espartano','Hoplita griego','Legionario de la legión extranjera','Cosaco','Húsar','Mosquetero',
+      'Espadachín renacentista','Inquisidor','Verdugo medieval','Peregrino medieval','Mercader de la ruta de la seda']},
+    {name:'Mitología y religión', items:['Zeus / dios griego','Diosa griega','Titán','Valquiria','Dios nórdico',
+      'Anubis','Dios egipcio','Ra','Osiris','Deidad hindú','Kitsune','Oni','Yokai','Dios azteca','Quetzalcóatl',
+      'Sirena','Tritón','Minotauro','Esfinge','Centauro','Cíclope','Medusa','Quimera','Fénix','Ángel','Arcángel',
+      'Demonio','Diablo','Súcubo','Íncubo','Hada','Duende','Trasgo','Banshee','Fantasma vengativo','Espíritu ancestral']},
+    {name:'Terror y monstruos', items:['Momia','Vampiro','Hombre lobo','Zombi','Fantasma','Bruja',
+      'Criatura de Frankenstein','Poltergeist','Muñeca poseída','Payaso siniestro','Espantapájaros maligno',
+      'Criatura lovecraftiana','Hombre polilla','Chupacabras','Sombra / entidad oscura','Persona poseída',
+      'Doppelgänger','Asesino enmascarado','Criatura del pantano','Gárgola viviente','Necrófago',
+      'Súcubo seductor','Bestia de las profundidades']},
+    {name:'Fantasía medieval', items:['Caballero','Mago','Hechicero','Nigromante','Druida','Paladín','Bárbaro',
+      'Elfo','Elfo oscuro','Orco','Enano','Trol','Gigante','Ogro','Goblin','Hada de fantasía','Sirena de fantasía',
+      'Unicornio','Dragón','Guerrero bárbaro','Arquero élfico','Rey de fantasía','Reina de fantasía',
+      'Bruja de bosque','Alquimista','Bardo','Pícaro / ladrón de fantasía','Semiorco','Gnomo']},
+    {name:'Ciencia ficción', items:['Robot','Androide','Cyborg','Inteligencia artificial con cuerpo','Astronauta',
+      'Alienígena','Alienígena hostil','Alienígena amistoso','Piloto de mecha','Clon','Mutante',
+      'Cazarrecompensas espacial','Colono espacial','Soldado del futuro','Hacker cyberpunk','Replicante',
+      'Explorador interdimensional','Científico loco','Superviviente post-apocalíptico']},
+    {name:'Prehistoria', items:['Cavernícola','Neandertal','Homo sapiens primitivo','Cazador-recolector',
+      'Chamán prehistórico','Mujer prehistórica recolectando','Tribu prehistórica','Dinosaurio carnívoro',
+      'Dinosaurio herbívoro','Pterodáctilo','Mamut','Tigre dientes de sable','Perezoso gigante','Rinoceronte lanudo']},
+    {name:'Profesiones y oficios', items:['Cocinero','Panadero','Carnicero','Pescador','Herrero','Carpintero',
+      'Minero','Granjero','Jardinero','Doctor','Enfermera','Cirujano','Bombero','Policía','Mecánico','Científico',
+      'Profesor','Bibliotecario','Pintor','Músico','Escritor','Arquitecto','Abogado','Juez','Piloto de avión',
+      'Marinero','Capitán de barco','Camarero','Barbero','Peluquero','Sastre','Electricista','Fontanero',
+      'Repartidor','Cartero','Basurero','Barrendero','Taxista','Conductor de autobús','Vendedor ambulante','Dependiente']},
+    {name:'Animales', items:['Lobo','Oso','Zorro','Águila','Halcón','Búho','Serpiente','Cocodrilo','Ballena',
+      'Delfín','Tiburón','Pulpo','Cuervo','Tigre','León','Elefante','Jirafa','Caballo','Ciervo','Rinoceronte',
+      'Hipopótamo','Gorila','Chimpancé','Rana','Mariposa','Araña','Escarabajo','Abeja','Gato','Perro','Conejo',
+      'Erizo','Murciélago','Pingüino','Oso polar','Camaleón']},
+    {name:'Piratas y aventureros', items:['Pirata','Capitán pirata','Corsario','Contrabandista','Cazatesoros',
+      'Explorador de la jungla','Explorador ártico','Arqueólogo aventurero','Mercenario','Cazarrecompensas']},
+    {name:'Salvaje oeste', items:['Vaquero','Pistolero','Sheriff','Forajido','Guerrero de las llanuras',
+      'Domador de caballos','Buscador de oro','Cantinera','Bandolero mexicano']},
+    {name:'Crimen y noir', items:['Detective privado','Policía de los años 40','Mafioso','Gánster',
+      'Ladrón de guante blanco','Espía','Agente secreto','Femme fatale','Contrabandista urbano']},
+    {name:'Superhéroes y vigilantes', items:['Superhéroe enmascarado','Vigilante nocturno','Villano de cómic',
+      'Antihéroe','Mutante con poderes','Justiciero encapuchado']},
+    {name:'Deportistas', items:['Boxeador','Futbolista','Ciclista','Nadador','Gimnasta','Corredor de fondo',
+      'Levantador de pesas','Surfista','Escalador','Patinador sobre hielo','Jugador de baloncesto']},
+    {name:'Realeza y nobleza', items:['Rey','Reina','Príncipe','Princesa','Emperador','Duque','Conde',
+      'Cortesano','Bufón de la corte','Consejero real']},
+    {name:'Gente cotidiana / urbana', items:['Oficinista','Turista','Estudiante','Repartidor en bicicleta',
+      'Persona esperando el autobús','Anciano paseando','Niño jugando','Adolescente con móvil','Corredor urbano',
+      'Vagabundo','Músico callejero']}
+  ],
+  acciones: [
+    {name:'Cotidiano', items:['Comiendo','Bebiendo','Cocinando','Fregando platos','Leyendo','Durmiendo',
+      'Vistiéndose','Duchándose','Cepillándose los dientes','Planchando','Limpiando','Haciendo la cama',
+      'Tendiendo la ropa','Comprando en el súper','Esperando','Bostezando','Estirándose','Despertándose',
+      'Preparando café']},
+    {name:'Movimiento y deporte', items:['Corriendo','Saltando','Nadando','En bicicleta','Escalando','Patinando',
+      'Esquiando','Surfeando','Boxeando','Haciendo yoga','Levantando pesas','Bailando','Saltando a la comba',
+      'Haciendo estiramientos','Remando','Practicando artes marciales']},
+    {name:'Interacción con objetos', items:['Cargando algo pesado','Empujando','Tirando de una cuerda',
+      'Sosteniendo una herramienta','Abriendo una puerta','Escribiendo','Dibujando','Tocando un instrumento',
+      'Usando el móvil','Conduciendo','Cargando una caja','Manejando una máquina','Cortando algo','Clavando un clavo']},
+    {name:'Emoción y expresión', items:['Llorando','Riendo','Gritando','Sorprendido','Pensativo','Enfadado',
+      'Asustado','Avergonzado','Orgulloso','Agotado','Aburrido','Concentrado','Nervioso','Aliviado']},
+    {name:'Combate y tensión', items:['Postura de pelea','Esquivando','Apuntando con arco','Desenvainando espada',
+      'Cargando un arma','Bloqueando un golpe','Cayendo al suelo','Huyendo','Persiguiendo','Escondiéndose',
+      'Vigilando / en alerta']},
+    {name:'Grupo / multitud', items:['Conversando','Peleando en grupo','Celebrando','Formación militar',
+      'Haciendo cola','Bailando en pareja','Abrazándose','Discutiendo','Dando la mano','Ayudando a alguien a levantarse']},
+    {name:'Poses estáticas / retrato', items:['De pie relajado','Sentado','Apoyado en una pared',
+      'Con los brazos cruzados','Mirando al horizonte','Tumbado','Agachado','Arrodillado','De espaldas','En cuclillas']}
+  ],
+  entornos: [
+    {name:'Castillo', sub:[
+      {name:'Arquitectura', items:['Muralla','Torreón','Puente levadizo','Almenas','Patio de armas','Torre del homenaje','Foso','Escaleras de caracol']},
+      {name:'Defensa', items:['Armadura','Espada larga','Ballesta','Catapulta','Escudo heráldico','Arco y flechas','Estandarte']},
+      {name:'Salones nobles', items:['Trono','Tapices','Candelabros','Gran salón','Chimenea monumental','Armadura decorativa']}
+    ]},
+    {name:'Cocina', sub:[
+      {name:'Utensilios', items:['Cuchillo','Sartén','Cucharón','Mortero','Tabla de cortar','Batidora','Olla']},
+      {name:'Ingredientes', items:['Especias','Pan','Verduras','Barriles','Frutas','Carne']},
+      {name:'Mobiliario', items:['Mesa de trabajo','Estanterías','Horno','Fregadero']}
+    ]},
+    {name:'Bosque / naturaleza', sub:[
+      {name:'Vegetación', items:['Árboles','Musgo','Raíces','Setas','Hiedra','Flores silvestres','Zarzas']},
+      {name:'Fauna', items:['Ciervo','Búho','Zorro','Ardilla','Lobo','Erizo']},
+      {name:'Elementos', items:['Río','Piedras','Niebla','Claro del bosque']}
+    ]},
+    {name:'Nave espacial', sub:[
+      {name:'Estructura', items:['Panel de control','Escotilla','Motor','Cápsula','Ventana panorámica']},
+      {name:'Objetos', items:['Traje espacial','Casco','Herramienta futurista','Consola holográfica']}
+    ]},
+    {name:'Mazmorra', sub:[
+      {name:'Ambiente', items:['Celdas','Cadenas','Antorchas','Rejas de hierro','Grilletes','Charcos','Instrumentos de tortura']}
+    ]},
+    {name:'Ciudad moderna', sub:[
+      {name:'Calle', items:['Farolas','Semáforos','Coches','Aceras','Papeleras','Bancos públicos']},
+      {name:'Edificios', items:['Rascacielos','Tiendas','Cafeterías','Grafitis']},
+      {name:'Transporte', items:['Autobús','Metro','Bicicleta urbana']}
+    ]},
+    {name:'Taller / herrería', sub:[
+      {name:'Herramientas', items:['Yunque','Martillo','Tenazas','Fuelle','Fragua']},
+      {name:'Materiales', items:['Barras de metal','Herraduras','Clavos']}
+    ]},
+    {name:'Laboratorio científico', sub:[
+      {name:'Equipamiento', items:['Microscopio','Tubos de ensayo','Matraces','Bata blanca','Ordenador de laboratorio']},
+      {name:'Elementos', items:['Líquidos de colores','Máquinas experimentales']}
+    ]},
+    {name:'Biblioteca', sub:[
+      {name:'Mobiliario', items:['Estanterías','Escaleras de biblioteca','Mesas de lectura','Lámparas de lectura']},
+      {name:'Objetos', items:['Libros antiguos','Mapas','Globos terráqueos','Pergaminos']}
+    ]},
+    {name:'Barco pirata', sub:[
+      {name:'Estructura', items:['Cubierta','Timón','Mástil','Velas','Cañones']},
+      {name:'Objetos', items:['Cofre del tesoro','Mapa del tesoro','Catalejo','Brújula','Barril de ron']}
+    ]},
+    {name:'Desierto', sub:[
+      {name:'Paisaje', items:['Dunas','Oasis','Rocas erosionadas','Cactus']},
+      {name:'Elementos', items:['Caravana de camellos','Ruinas enterradas','Tormenta de arena']}
+    ]},
+    {name:'Casa embrujada', sub:[
+      {name:'Ambiente', items:['Telarañas','Muebles cubiertos con sábanas','Escaleras crujientes','Retratos inquietantes','Puertas rechinando']},
+      {name:'Objetos', items:['Velas','Espejos rotos','Juguetes antiguos']}
+    ]},
+    {name:'Templo antiguo / ruinas', sub:[
+      {name:'Arquitectura', items:['Columnas caídas','Estatuas erosionadas','Altares','Jeroglíficos']},
+      {name:'Objetos', items:['Reliquias','Trampas antiguas','Tesoro oculto']}
+    ]},
+    {name:'Mercado medieval', sub:[
+      {name:'Puestos', items:['Puesto de telas','Puesto de especias','Puesto de armas','Puesto de comida']},
+      {name:'Ambiente', items:['Multitud','Carteles pintados a mano','Carromatos']}
+    ]},
+    {name:'Campo de batalla', sub:[
+      {name:'Elementos', items:['Trincheras','Humo','Barricadas','Armas caídas','Estandartes clavados']}
+    ]},
+    {name:'Ciudad futurista / cyberpunk', sub:[
+      {name:'Arquitectura', items:['Rascacielos con hologramas','Callejones con neón','Pasarelas elevadas']},
+      {name:'Objetos', items:['Anuncios holográficos','Drones','Vehículos voladores']}
+    ]},
+    {name:'Granja', sub:[
+      {name:'Estructuras', items:['Granero','Establo','Silo','Corral']},
+      {name:'Objetos', items:['Tractor','Espantapájaros','Herramientas de labranza']}
+    ]},
+    {name:'Playa / océano', sub:[
+      {name:'Paisaje', items:['Orilla','Rocas','Palmeras','Olas']},
+      {name:'Objetos', items:['Barca varada','Redes de pesca','Conchas']}
+    ]},
+    {name:'Montaña / cueva', sub:[
+      {name:'Paisaje', items:['Estalactitas','Estalagmitas','Riscos','Nieve']},
+      {name:'Objetos', items:['Cuerdas de escalada','Antorchas','Minerales brillantes']}
+    ]},
+    {name:'Circo', sub:[
+      {name:'Estructura', items:['Carpa','Pista central','Graderío']},
+      {name:'Objetos', items:['Trapecio','Jaulas','Carteles pintados','Farolillos']}
+    ]}
+  ],
+  epocas: [
+    {name:'Épocas', items:['Prehistoria','Edad de los dinosaurios','Antigüedad egipcia','Antigüedad grecorromana',
+      'Mesopotamia antigua','Imperio persa','China imperial','Japón feudal','Edad Media europea','Época vikinga',
+      'Renacimiento','Época de los piratas','Edad de la exploración / colonial','Salvaje oeste',
+      'Revolución industrial','Época victoriana','Belle époque','Años 20','Años 50','Guerra fría',
+      'Presente cotidiano','Futuro cercano','Futuro distópico / post-apocalíptico','Espacio / ciencia ficción',
+      'Steampunk','Mundo post-nuclear']}
+  ],
+  arquetipos: [
+    {name:'Arquetipos', items:['El héroe','El mentor','El villano','El bufón','El forastero','El sabio',
+      'El rebelde','El inocente','El gobernante','El cuidador','El explorador','El creador','El amante',
+      'El bromista','El hombre corriente','El mago / hechicero','El antihéroe','La femme fatale','El traidor',
+      'El guardián del umbral','La sombra (lado oscuro)','El niño eterno','El anciano sabio','El tirano']}
+  ],
+  subculturas: [
+    {name:'Blues / América profunda', sub:[
+      {name:'Personajes', items:['Bluesman con guitarra','Predicador de pueblo','Granjero del sur','Camarero de bar de carretera','Vendedor ambulante','Mujer con vestido de flores']},
+      {name:'Objetos / iconos', items:['Guitarra resonador','Armónica','Botella de whisky','Cruce de caminos (crossroads)','Ventilador de techo','Neón de motel','Máquina de discos (jukebox)']},
+      {name:'Ambientes', items:['Carretera solitaria','Campos de algodón','Pueblo polvoriento','Bar de carretera (roadhouse)','Iglesia baptista rural','Vía de tren','Porche de madera','Gasolinera vieja','Diner de carretera']}
+    ]},
+    {name:'Jazz', sub:[
+      {name:'Personajes', items:['Trompetista','Cantante de jazz','Pianista de club','Contrabajista']},
+      {name:'Objetos / iconos', items:['Saxofón','Trompeta','Piano de cola','Sombrero fedora','Humo de cigarro']},
+      {name:'Ambientes', items:['Club de jazz en penumbra','Calle nocturna con neones','Nueva Orleans']}
+    ]},
+    {name:'Rock and roll / Rockabilly', sub:[
+      {name:'Personajes', items:['Roquero con guitarra eléctrica','Chica pin-up','Motero']},
+      {name:'Objetos / iconos', items:['Guitarra eléctrica','Moto clásica','Chaqueta de cuero','Tocadiscos']},
+      {name:'Ambientes', items:['Autocine (drive-in)','Gasolinera retro','Carretera americana']}
+    ]},
+    {name:'Punk', sub:[
+      {name:'Personajes', items:['Punk con cresta','Skater punk']},
+      {name:'Objetos / iconos', items:['Chaqueta con tachuelas','Imperdibles','Pintadas','Altavoz roto']},
+      {name:'Ambientes', items:['Callejón urbano','Sala de conciertos underground']}
+    ]},
+    {name:'Hip-hop', sub:[
+      {name:'Personajes', items:['MC con micrófono','DJ','Grafitero','Breakdancer']},
+      {name:'Objetos / iconos', items:['Platos de DJ','Boombox','Gorra','Cadenas doradas','Zapatillas']},
+      {name:'Ambientes', items:['Bloque de pisos urbano','Parque con grafitis','Metro urbano']}
+    ]},
+    {name:'Country', sub:[
+      {name:'Personajes', items:['Vaquero country','Granjero','Chica de rodeo']},
+      {name:'Objetos / iconos', items:['Sombrero vaquero','Botas camperas','Banjo','Camioneta pickup']},
+      {name:'Ambientes', items:['Rancho','Feria de pueblo','Rodeo']}
+    ]},
+    {name:'Flamenco', sub:[
+      {name:'Personajes', items:['Bailaora','Guitarrista flamenco','Cantaor']},
+      {name:'Objetos / iconos', items:['Guitarra española','Abanico','Castañuelas','Traje de volantes']},
+      {name:'Ambientes', items:['Patio andaluz','Tablao flamenco']}
+    ]},
+    {name:'Mariachi / música mexicana', sub:[
+      {name:'Personajes', items:['Mariachi','Charro']},
+      {name:'Objetos / iconos', items:['Sombrero de charro','Guitarrón','Trompeta']},
+      {name:'Ambientes', items:['Plaza mexicana','Cantina']}
+    ]},
+    {name:'Reggae', sub:[
+      {name:'Personajes', items:['Rastafari','Cantante reggae']},
+      {name:'Objetos / iconos', items:['Gorro rasta','Bandera tricolor','Guitarra']},
+      {name:'Ambientes', items:['Playa caribeña','Calle de Jamaica']}
+    ]},
+    {name:'Metal / Grunge', sub:[
+      {name:'Personajes', items:['Rockero metalero','Guitarrista de metal','Cantante grunge']},
+      {name:'Objetos / iconos', items:['Guitarra de cuerpo afilado','Cuero y tachuelas','Amplificador','Camisa de franela']},
+      {name:'Ambientes', items:['Garaje de ensayo','Concierto en vivo','Ciudad gris industrial']}
+    ]},
+    {name:'Japón urbano', sub:[
+      {name:'Personajes', items:['Salaryman','Yakuza','Estudiante con uniforme','Chica harajuku']},
+      {name:'Objetos / iconos', items:['Máquina de pachinko','Paraguas transparente','Vending machine','Cartel de neón']},
+      {name:'Ambientes', items:['Callejón de Tokio','Estación de tren','Izakaya (bar japonés)']}
+    ]},
+    {name:'India rural', sub:[
+      {name:'Personajes', items:['Agricultor indio','Mujer con sari','Vendedor de especias']},
+      {name:'Objetos / iconos', items:['Rickshaw','Telas de colores','Especias apiladas','Vaca sagrada']},
+      {name:'Ambientes', items:['Mercado callejero','Templo hindú','Campo de arroz']}
+    ]},
+    {name:'Mediterráneo / Andalucía', sub:[
+      {name:'Personajes', items:['Pescador mediterráneo','Anciano jugando a las cartas','Mujer tendiendo ropa']},
+      {name:'Objetos / iconos', items:['Macetas con geranios','Persianas de madera','Barcas de pesca']},
+      {name:'Ambientes', items:['Calle blanca andaluza','Puerto pesquero','Plaza con fuente']}
+    ]},
+    {name:'Rusia profunda', sub:[
+      {name:'Personajes', items:['Campesino ruso','Mujer con pañuelo (babushka)']},
+      {name:'Objetos / iconos', items:['Matrioska','Samovar','Iglesia con cúpulas de cebolla']},
+      {name:'Ambientes', items:['Estepa nevada','Pueblo de madera','Bosque de abedules']}
+    ]},
+    {name:'Caribe', sub:[
+      {name:'Personajes', items:['Pescador caribeño','Bailarina de salsa']},
+      {name:'Objetos / iconos', items:['Tambores','Palmeras','Barca de colores']},
+      {name:'Ambientes', items:['Playa caribeña','Calle colonial colorida']}
+    ]}
+  ],
+  cuaderno: [
+    {name:'Momias', children:[
+      {name:'Momia egipcia real', children:[]},
+      {name:'Momia en Scooby-Doo', children:[]},
+      {name:'La Momia (película, acción real)', children:[]}
+    ]}
+  ]
+};
+
+let DATA = loadData();
+function loadData(){
+  const raw = localStorage.getItem(DATA_KEY);
+  if(raw){
+    try{
+      const parsed = JSON.parse(raw);
+      // migración: si faltan categorías nuevas (versión antigua guardada), se rellenan desde SEED sin tocar lo ya editado
+      Object.keys(SEED).forEach(key=>{
+        if(!parsed[key]) parsed[key] = JSON.parse(JSON.stringify(SEED[key]));
+      });
+      return parsed;
+    }catch(e){}
+  }
+  return JSON.parse(JSON.stringify(SEED));
+}
+function saveData(){ localStorage.setItem(DATA_KEY, JSON.stringify(DATA)); }
+
+function googleSearch(term){
+  window.open('https://www.google.com/search?tbm=isch&q='+encodeURIComponent(term), '_blank');
+}
+
+// ── LENTES DE BÚSQUEDA (disponibles en todas las pestañas, estado independiente por pestaña) ──
+const LENSES = [
+  {key:'directo', label:'Directo', suffix:''},
+  {key:'real', label:'Real / histórico', suffix:'real fotografía'},
+  {key:'cine', label:'Cine', suffix:'película'},
+  {key:'anim', label:'Animación', suffix:'dibujos animados'},
+  {key:'videojuego', label:'Videojuego', suffix:'videojuego'},
+  {key:'arte', label:'Arte / concept art', suffix:'concept art ilustración'},
+  {key:'anatomia', label:'Anatomía / diseño', suffix:'anatomía diseño referencia'}
+];
+const lensState = {
+  personajes:'directo', acciones:'directo', entornos:'directo', epocas:'directo',
+  arquetipos:'directo', subculturas:'directo', cuaderno:'directo', aleatorio:'directo'
+};
+function lensToolbarHTML(catKey){
+  return `<div class="scheme-tb lens-tb">
+    <span class="flbl">Lente de búsqueda:</span>
+    ${LENSES.map(l=>`<button class="filter lens-btn${l.key===lensState[catKey]?' active':''}" data-lens="${l.key}">${l.label}</button>`).join('')}
+  </div>`;
+}
+function wireLensToolbar(container, catKey){
+  container.querySelectorAll('.lens-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      lensState[catKey] = btn.dataset.lens;
+      container.querySelectorAll('.lens-btn').forEach(b=>b.classList.toggle('active', b===btn));
+    });
+  });
+}
+function searchWithLens(catKey, term){
+  const lens = LENSES.find(l=>l.key===lensState[catKey]);
+  googleSearch(lens && lens.suffix ? term+' '+lens.suffix : term);
+}
+
+// ── FLAT CATEGORY RENDER (personajes, acciones, epocas, arquetipos) ──
+function renderFlatView(cat){
+  const container = document.getElementById('view-'+cat);
+  const list = DATA[cat];
+  container.innerHTML = `
+    <div class="window">
+      <div class="scheme-tb">
+        <input type="search" placeholder="buscar..." class="flt-search">
+        <button class="mini tb-spacer new-theme-btn">+ tema</button>
+      </div>
+      ${lensToolbarHTML(cat)}
+      <div class="win-content"></div>
+    </div>`;
+  wireLensToolbar(container, cat);
+  const content = container.querySelector('.win-content');
+
+  function draw(query){
+    query = (query||'').toLowerCase().trim();
+    content.innerHTML='';
+    list.forEach((fam, fi)=>{
+      const fdiv=document.createElement('div');
+      fdiv.className='family';
+      const matches = fam.items.filter(it=>it.toLowerCase().includes(query));
+      const showFam = !query || matches.length>0 || fam.name.toLowerCase().includes(query);
+      if(!showFam) return;
+      fdiv.innerHTML = `
+        <button class="fhdr">
+          <span class="ticon tog">▸</span>
+          <span class="fname">${fam.name}</span>
+          <span class="fcount">${fam.items.length}</span>
+          <span class="fadd" title="añadir item(s)">＋</span>
+        </button>
+        <div class="fbody open">
+          <div class="items-grid"></div>
+        </div>`;
+      const grid = fdiv.querySelector('.items-grid');
+      const itemsToShow = query ? matches : fam.items;
+      itemsToShow.forEach(name=>{
+        const iw = document.createElement('div');
+        iw.className='ritem-wrap';
+        iw.innerHTML = `<a class="item-link">${name}</a><button class="item-del" title="eliminar">×</button>`;
+        iw.querySelector('.item-link').addEventListener('click',()=>searchWithLens(cat, name));
+        iw.querySelector('.item-del').addEventListener('click',(e)=>{
+          e.stopPropagation();
+          fam.items = fam.items.filter(x=>x!==name);
+          saveData(); draw(container.querySelector('.flt-search').value);
+        });
+        grid.appendChild(iw);
+      });
+      fdiv.querySelector('.fhdr').addEventListener('click',(e)=>{
+        if(e.target.classList.contains('fadd')) return;
+        const body=fdiv.querySelector('.fbody');
+        const open=body.classList.toggle('open');
+        fdiv.querySelector('.tog').textContent = open?'▾':'▸';
+      });
+      fdiv.querySelector('.fadd').addEventListener('click',(e)=>{
+        e.stopPropagation();
+        const raw = prompt('Añadir item(s) a "'+fam.name+'" (sepáralos con comas si son varios):');
+        if(!raw) return;
+        raw.split(',').map(s=>s.trim()).filter(Boolean).forEach(s=>fam.items.push(s));
+        saveData(); draw(container.querySelector('.flt-search').value);
+      });
+      content.appendChild(fdiv);
+    });
+    if(!content.children.length){
+      content.innerHTML = '<div class="empty-msg" style="display:block;">Sin resultados.</div>';
+    }
+  }
+  draw('');
+  container.querySelector('.flt-search').addEventListener('input', e=>draw(e.target.value));
+  container.querySelector('.new-theme-btn').addEventListener('click',()=>{
+    const name = prompt('Nombre del nuevo tema:');
+    if(!name) return;
+    list.push({name, items:[]});
+    saveData(); draw(container.querySelector('.flt-search').value);
+  });
+}
+
+// ── NESTED RENDER (2 niveles: familia > subfamilia > items) — usado por Entornos y Subculturas ──
+function renderNestedView(cat, addLabel){
+  const container = document.getElementById('view-'+cat);
+  const list = DATA[cat];
+  container.innerHTML = `
+    <div class="window">
+      <div class="scheme-tb">
+        <input type="search" placeholder="buscar..." class="flt-search">
+        <button class="mini tb-spacer new-theme-btn">${addLabel}</button>
+      </div>
+      ${lensToolbarHTML(cat)}
+      <div class="win-content"></div>
+    </div>`;
+  wireLensToolbar(container, cat);
+  const content = container.querySelector('.win-content');
+
+  function draw(query){
+    query=(query||'').toLowerCase().trim();
+    content.innerHTML='';
+    list.forEach(fam=>{
+      const fdiv=document.createElement('div');
+      fdiv.className='family';
+      fdiv.innerHTML = `
+        <button class="fhdr">
+          <span class="ticon tog">▸</span>
+          <span class="fname">${fam.name}</span>
+          <span class="fcount">${fam.sub.reduce((a,s)=>a+s.items.length,0)}</span>
+          <span class="fadd" title="añadir subcategoría">＋</span>
+        </button>
+        <div class="fbody open"></div>`;
+      const body = fdiv.querySelector('.fbody');
+      let anyMatch=false;
+      fam.sub.forEach(sf=>{
+        const matches = sf.items.filter(it=>it.toLowerCase().includes(query));
+        const showSf = !query || matches.length>0 || sf.name.toLowerCase().includes(query);
+        if(!showSf) return;
+        anyMatch=true;
+        const sfDiv=document.createElement('div');
+        sfDiv.innerHTML = `
+          <div class="sfhdr"><span class="sfname">${sf.name}</span><button class="sfadd" title="añadir item(s)">＋</button></div>
+          <div class="items-grid"></div>`;
+        const grid = sfDiv.querySelector('.items-grid');
+        const itemsToShow = query ? matches : sf.items;
+        itemsToShow.forEach(name=>{
+          const iw=document.createElement('div');
+          iw.className='ritem-wrap';
+          iw.innerHTML = `<a class="item-link">${name}</a><button class="item-del" title="eliminar">×</button>`;
+          iw.querySelector('.item-link').addEventListener('click',()=>searchWithLens(cat, name));
+          iw.querySelector('.item-del').addEventListener('click',(e)=>{
+            e.stopPropagation();
+            sf.items = sf.items.filter(x=>x!==name);
+            saveData(); draw(container.querySelector('.flt-search').value);
+          });
+          grid.appendChild(iw);
+        });
+        sfDiv.querySelector('.sfadd').addEventListener('click',()=>{
+          const raw = prompt('Añadir item(s) a "'+sf.name+'" (separa con comas):');
+          if(!raw) return;
+          raw.split(',').map(s=>s.trim()).filter(Boolean).forEach(s=>sf.items.push(s));
+          saveData(); draw(container.querySelector('.flt-search').value);
+        });
+        body.appendChild(sfDiv);
+      });
+      if(query && !anyMatch) return;
+      fdiv.querySelector('.fhdr').addEventListener('click',(e)=>{
+        if(e.target.classList.contains('fadd')) return;
+        const open=body.classList.toggle('open');
+        fdiv.querySelector('.tog').textContent = open?'▾':'▸';
+      });
+      fdiv.querySelector('.fadd').addEventListener('click',(e)=>{
+        e.stopPropagation();
+        const name = prompt('Nombre de la nueva subcategoría dentro de "'+fam.name+'" (ej. Personajes / Objetos / Ambientes):');
+        if(!name) return;
+        fam.sub.push({name, items:[]});
+        saveData(); draw(container.querySelector('.flt-search').value);
+      });
+      content.appendChild(fdiv);
+    });
+    if(!content.children.length){
+      content.innerHTML = '<div class="empty-msg" style="display:block;">Sin resultados.</div>';
+    }
+  }
+  draw('');
+  container.querySelector('.flt-search').addEventListener('input', e=>draw(e.target.value));
+  container.querySelector('.new-theme-btn').addEventListener('click',()=>{
+    const name = prompt('Nombre del nuevo tema:');
+    if(!name) return;
+    list.push({name, sub:[]});
+    saveData(); draw(container.querySelector('.flt-search').value);
+  });
+}
+
+// ── TABS ──
+document.querySelectorAll('.app-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.app-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('view-'+tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ── ALEATORIO ──
+function flatten(cat){
+  return DATA[cat].flatMap(f=>f.items);
+}
+function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+let lastRoll = null;
+document.getElementById('roll-btn').addEventListener('click',()=>{
+  const p = pickRandom(flatten('personajes'));
+  const a = pickRandom(flatten('acciones'));
+  const includeEpoca = document.getElementById('roll-epoca').checked;
+  const e = includeEpoca ? pickRandom(flatten('epocas')) : null;
+  lastRoll = {p,a,e};
+  const resDiv = document.getElementById('roll-result');
+  resDiv.innerHTML = `
+    <div class="roll-line"><span class="roll-tag">Personaje</span><span class="roll-val">${p}</span></div>
+    <div class="roll-line"><span class="roll-tag">Acción</span><span class="roll-val">${a}</span></div>
+    ${e?`<div class="roll-line"><span class="roll-tag">Época</span><span class="roll-val">${e}</span></div>`:''}
+  `;
+  document.getElementById('roll-search').style.display='inline-block';
+});
+document.getElementById('roll-search').addEventListener('click',()=>{
+  if(!lastRoll) return;
+  const term = [lastRoll.p, lastRoll.a, lastRoll.e].filter(Boolean).join(' ');
+  searchWithLens('aleatorio', term);
+});
+document.getElementById('aleatorio-lens').innerHTML = lensToolbarHTML('aleatorio');
+wireLensToolbar(document.getElementById('aleatorio-lens'), 'aleatorio');
+
+// ── ESQUEMA GENERAL: dropdown selector ──
+const CAT_LABELS = {
+  personajes:'Personajes', acciones:'Acciones', entornos:'Objetos / Entornos',
+  epocas:'Épocas', arquetipos:'Arquetipos', subculturas:'Subculturas y estilos'
+};
+function initEsquemaDropdown(){
+  const btn = document.getElementById('esquema-dd-btn');
+  const menu = document.getElementById('esquema-dd-menu');
+  function paintMenu(activeCat){
+    menu.innerHTML = Object.keys(CAT_LABELS).map(k=>
+      `<div class="fdd-item${k===activeCat?' active':''}" data-cat="${k}">${CAT_LABELS[k]}</div>`
+    ).join('');
+    menu.querySelectorAll('.fdd-item').forEach(it=>{
+      it.addEventListener('click',()=>{
+        const cat = it.dataset.cat;
+        btn.innerHTML = CAT_LABELS[cat]+' <span class="fdd-arrow">▾</span>';
+        document.querySelectorAll('.subview').forEach(v=>v.classList.remove('active'));
+        document.getElementById('view-'+cat).classList.add('active');
+        paintMenu(cat);
+        menu.classList.remove('open');
+      });
+    });
+  }
+  paintMenu('personajes');
+  btn.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const rect = btn.getBoundingClientRect();
+    menu.style.left = rect.left+'px';
+    menu.style.top = (rect.bottom+4)+'px';
+    menu.classList.toggle('open');
+  });
+  document.addEventListener('click',()=>menu.classList.remove('open'));
+}
+
+// ── CUADERNO: árbol libre, sin esquema fijo, lo construye el usuario ──
+let cuadActiveIdx = 0;
+
+function cuadSearch(name){
+  searchWithLens('cuaderno', name);
+}
+
+function renderCuadernoView(){
+  const container = document.getElementById('view-cuaderno');
+  container.innerHTML = `
+    <div class="window">
+      <div class="cuad-body">
+        ${lensToolbarHTML('cuaderno')}
+        <div class="cuad-panes">
+          <div class="cuad-topics" id="cuad-topics"></div>
+          <div class="cuad-detail" id="cuad-detail"></div>
+        </div>
+      </div>
+    </div>`;
+  wireLensToolbar(container, 'cuaderno');
+  drawCuadTopics();
+  drawCuadDetail();
+}
+
+function drawCuadTopics(){
+  const el = document.getElementById('cuad-topics');
+  const list = DATA.cuaderno;
+  el.innerHTML = list.map((t,i)=>`
+    <div class="cuad-topic-item${i===cuadActiveIdx?' active':''}" data-i="${i}">
+      <span class="cuad-topic-name">${t.name}</span>
+      <button class="cuad-topic-del" title="eliminar tema">×</button>
+    </div>`).join('') + `<button class="cuad-add-topic">+ nuevo tema</button>`;
+
+  el.querySelectorAll('.cuad-topic-item').forEach(it=>{
+    it.querySelector('.cuad-topic-name').addEventListener('click',()=>{
+      cuadActiveIdx = parseInt(it.dataset.i);
+      drawCuadTopics(); drawCuadDetail();
+    });
+    it.querySelector('.cuad-topic-del').addEventListener('click',(e)=>{
+      e.stopPropagation();
+      if(!confirm('¿Eliminar el tema "'+DATA.cuaderno[parseInt(it.dataset.i)].name+'" y todo su contenido?')) return;
+      DATA.cuaderno.splice(parseInt(it.dataset.i),1);
+      if(cuadActiveIdx>=DATA.cuaderno.length) cuadActiveIdx = Math.max(0, DATA.cuaderno.length-1);
+      saveData(); drawCuadTopics(); drawCuadDetail();
+    });
+  });
+  el.querySelector('.cuad-add-topic').addEventListener('click',()=>{
+    const name = prompt('Nombre del nuevo tema (ej. "Momias", "Edad de los dinosaurios"):');
+    if(!name) return;
+    DATA.cuaderno.push({name, children:[]});
+    cuadActiveIdx = DATA.cuaderno.length-1;
+    saveData(); drawCuadTopics(); drawCuadDetail();
+  });
+}
+
+function drawCuadDetail(){
+  const el = document.getElementById('cuad-detail');
+  const topic = DATA.cuaderno[cuadActiveIdx];
+  if(!topic){
+    el.innerHTML = '<div class="cuad-empty">Crea un tema para empezar a construir tu cuaderno.</div>';
+    return;
+  }
+  el.innerHTML = '';
+  const titleDiv = document.createElement('div');
+  titleDiv.className='cuad-root-title';
+  titleDiv.textContent = topic.name;
+  titleDiv.title = 'Click para buscar "'+topic.name+'"';
+  titleDiv.addEventListener('click',()=>cuadSearch(topic.name));
+  el.appendChild(titleDiv);
+
+  const addRootBtn = document.createElement('button');
+  addRootBtn.className='mini';
+  addRootBtn.style.cssText='display:block;margin:6px 0 14px;';
+  addRootBtn.textContent='+ añadir dentro de "'+topic.name+'"';
+  addRootBtn.addEventListener('click',()=>{
+    const raw = prompt('Añadir elemento(s) dentro de "'+topic.name+'" (separa con comas si son varios):');
+    if(!raw) return;
+    raw.split(',').map(s=>s.trim()).filter(Boolean).forEach(s=>topic.children.push({name:s, children:[]}));
+    saveData(); drawCuadDetail(); drawCuadTopics();
+  });
+  el.appendChild(addRootBtn);
+
+  const treeWrap = document.createElement('div');
+  renderCuadNodes(topic.children, treeWrap, topic);
+  el.appendChild(treeWrap);
+}
+
+let cuadOpenSet = new WeakSet(); // nodos actualmente desplegados (no se guarda en el JSON)
+
+function renderCuadNodes(nodes, container, parentObj){
+  nodes.forEach((node, idx)=>{
+    const hasChildren = !!(node.children && node.children.length);
+    const isOpen = hasChildren && cuadOpenSet.has(node);
+    const nDiv = document.createElement('div');
+    nDiv.className='cuad-node';
+    nDiv.innerHTML = `
+      <div class="cuad-node-row">
+        <span class="cuad-node-tog">${hasChildren ? (isOpen?'▾':'▸') : ''}</span>
+        <span class="cuad-node-text">${node.name}</span>
+        <button class="cuad-node-add" title="añadir dentro">＋</button>
+        <button class="cuad-node-del" title="eliminar">×</button>
+      </div>
+      <div class="cuad-children${isOpen?' open':''}"></div>`;
+    nDiv.querySelector('.cuad-node-text').addEventListener('click',()=>cuadSearch(node.name));
+    const togEl = nDiv.querySelector('.cuad-node-tog');
+    const childWrap = nDiv.querySelector('.cuad-children');
+    if(hasChildren){
+      togEl.addEventListener('click',(e)=>{
+        e.stopPropagation();
+        const open = childWrap.classList.toggle('open');
+        togEl.textContent = open?'▾':'▸';
+        if(open) cuadOpenSet.add(node); else cuadOpenSet.delete(node);
+      });
+    }
+    nDiv.querySelector('.cuad-node-add').addEventListener('click',()=>{
+      const raw = prompt('Añadir dentro de "'+node.name+'" (separa con comas si son varios):');
+      if(!raw) return;
+      raw.split(',').map(s=>s.trim()).filter(Boolean).forEach(s=>node.children.push({name:s, children:[]}));
+      cuadOpenSet.add(node);
+      saveData(); drawCuadDetail();
+    });
+    nDiv.querySelector('.cuad-node-del').addEventListener('click',()=>{
+      parentObj.children = parentObj.children.filter((_,i)=>i!==idx);
+      saveData(); drawCuadDetail();
+    });
+    if(hasChildren){
+      renderCuadNodes(node.children, childWrap, node);
+    }
+    container.appendChild(nDiv);
+  });
+}
+
+// ── INIT ──
+applyTheme(localStorage.getItem(THEME_KEY)==='dark');
+renderFlatView('personajes');
+renderFlatView('acciones');
+renderNestedView('entornos', '+ entorno');
+renderFlatView('epocas');
+renderFlatView('arquetipos');
+renderNestedView('subculturas', '+ estilo');
+initEsquemaDropdown();
+renderCuadernoView();
+
+// ── TOAST ──
+let toastTimer=null;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2400);
+}
+
+// ── EXPORT / IMPORT (fusiona con lo existente, nunca borra sin confirmar) ──
+function getAllData(){
+  return { version:1, exportDate:new Date().toISOString(), ...JSON.parse(JSON.stringify(DATA)) };
+}
+
+function mergeFlatCategory(cat, incomingFams){
+  if(!DATA[cat]) DATA[cat]=[];
+  incomingFams.forEach(inFam=>{
+    if(!inFam || !inFam.name) return;
+    const existing = DATA[cat].find(f=>f.name===inFam.name);
+    if(existing){
+      (inFam.items||[]).forEach(it=>{ if(!existing.items.includes(it)) existing.items.push(it); });
+    } else {
+      DATA[cat].push({name:inFam.name, items:[...(inFam.items||[])]});
+    }
+  });
+}
+
+function mergeNestedCategory(cat, incomingFams){
+  if(!DATA[cat]) DATA[cat]=[];
+  incomingFams.forEach(inFam=>{
+    if(!inFam || !inFam.name) return;
+    let existing = DATA[cat].find(f=>f.name===inFam.name);
+    if(!existing){ existing={name:inFam.name, sub:[]}; DATA[cat].push(existing); }
+    (inFam.sub||[]).forEach(inSub=>{
+      let exSub = existing.sub.find(s=>s.name===inSub.name);
+      if(!exSub){ exSub={name:inSub.name, items:[]}; existing.sub.push(exSub); }
+      (inSub.items||[]).forEach(it=>{ if(!exSub.items.includes(it)) exSub.items.push(it); });
+    });
+  });
+}
+
+function normalizeCuadNode(node){
+  return {name:node.name, children:(node.children||[]).map(normalizeCuadNode)};
+}
+function mergeCuadNode(existing, incoming){
+  (incoming.children||[]).forEach(inChild=>{
+    if(!inChild || !inChild.name) return;
+    const exChild = existing.children.find(c=>c.name===inChild.name);
+    if(exChild) mergeCuadNode(exChild, inChild);
+    else existing.children.push(normalizeCuadNode(inChild));
+  });
+}
+function mergeCuaderno(incomingTopics){
+  if(!DATA.cuaderno) DATA.cuaderno=[];
+  incomingTopics.forEach(inTopic=>{
+    if(!inTopic || !inTopic.name) return;
+    const existing = DATA.cuaderno.find(t=>t.name===inTopic.name);
+    if(existing) mergeCuadNode(existing, inTopic);
+    else DATA.cuaderno.push(normalizeCuadNode(inTopic));
+  });
+}
+
+function refreshAllViews(){
+  renderFlatView('personajes');
+  renderFlatView('acciones');
+  renderNestedView('entornos', '+ entorno');
+  renderFlatView('epocas');
+  renderFlatView('arquetipos');
+  renderNestedView('subculturas', '+ estilo');
+  renderCuadernoView();
+  const activeCat = document.querySelector('.subview.active')?.dataset.cat || 'personajes';
+  document.querySelectorAll('.subview').forEach(v=>v.classList.toggle('active', v.dataset.cat===activeCat));
+}
+
+function loadAllData(data){
+  if(!data || typeof data!=='object'){ toast('Formato no válido'); return; }
+  ['personajes','acciones','epocas','arquetipos'].forEach(cat=>{
+    if(Array.isArray(data[cat])) mergeFlatCategory(cat, data[cat]);
+  });
+  ['entornos','subculturas'].forEach(cat=>{
+    if(Array.isArray(data[cat])) mergeNestedCategory(cat, data[cat]);
+  });
+  if(Array.isArray(data.cuaderno)) mergeCuaderno(data.cuaderno);
+  saveData();
+  refreshAllViews();
+  toast('✓ datos importados');
+}
+
+document.getElementById('btn-export').addEventListener('click',()=>{
+  const json = JSON.stringify(getAllData(), null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `referencias-datos-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Datos exportados');
+});
+
+document.getElementById('btn-import').addEventListener('change', function(){
+  const file = this.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      if(confirm(`¿Importar ${file.name}? Se fusionará con lo que ya tienes (no se borra nada).`)){
+        loadAllData(data);
+      }
+    }catch(err){ toast('Error: archivo JSON no válido'); }
+    this.value='';
+  };
+  reader.readAsText(file);
+});
+</script>
+</body>
+</html>
